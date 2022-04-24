@@ -71,11 +71,11 @@ if (array_key_exists("strings",$_GET)){
 }
 if(array_key_exists("conv_img_curdir",$_GET)){
     array_pop($_GET);
-    $webpImg = new Image();
     if (!is_dir("converted")){
         mkdir('converted',0777,true);
     }
-    $resultArr = $webpImg->convToWebp($list_images);
+    $resultArr = Image::convToWebp($list_images);
+
     echo "Список конвертированных изображений текущей директории:\n";
     foreach ($resultArr as $conImg){
         echo "<b>".$conImg."\n</b>";
@@ -100,7 +100,7 @@ class Image{
     public function convertFromTo($inFileFormat,$outFileFormat){
 
     }
-    public function convToWebp($inputArray){
+    public static function convToWebp($inputArray){
         $returnArray = [];
         if (count($inputArray)>0){
             foreach ($inputArray as $image){
