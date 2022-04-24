@@ -140,7 +140,7 @@ class Image{
         <div class="col-12">
             <div class="alert alert-warning text-center mb-4 p-2">
                 <div class="h6 text-center">Форматы .bmp .png .jpg .gif</div>
-                <a title="сбросить GET параметры" href="resima.php">Форматы ICO и SVG не поддерживаются !</a>
+                <a title="сбросить GET параметры" href="<?php echo __FILE__;?>">Форматы ICO и SVG не поддерживаются !</a>
             </div>
         </div>
     </div>
@@ -149,12 +149,19 @@ class Image{
 <!--/*
     сделать вкладки для каждого инпута
 */-->
+<div class="container">
+    <div class="row">
+        <div class="tabs-wrapper d-flex flex-wrap">
+            <div class="tab bg-info text-white p-2 ml-1 mr-1 rounded">Список изображений в текущей директории:</div>
+        </div>
+    </div>
+</div>
 
 <div class="container" data-containerId="1">
     <div class="row">
         <div class="col-12">
             <div class="alert alert-info">
-                <div class="h4 text-center">Список изображений в текущей директории:</div>
+                <div class="h4 text-center" data-header="1">Список изображений в текущей директории:</div>
                 <?if(count($list_images)>0):?>
                 <form action="" class="">
                     <div class="list-images-k d-flex flex-wrap" name="list-images">
@@ -197,7 +204,7 @@ class Image{
     <div class="row">
         <div class="col-12">
             <div class="alert alert-info">
-                <div class="h4 text-center">Список ссылок на изображения:</div>
+                <div class="h4 text-center" data-header="2">Список ссылок на изображения:</div>
                 <p>вставлять без названия сайта, без первого слеша, через пробел. Например:</p>
                 <span>local/templates/moguntia/images/about_bc.png local/templates/moguntia/images/advan1.png</span>
                 <hr>
@@ -269,6 +276,8 @@ class Image{
         conv_curdir_btn.classList.toggle("d-none");
         conv_curdir_btn.classList.toggle("active");
     });
+
+
 
 </script>
 <!--/**/-->
