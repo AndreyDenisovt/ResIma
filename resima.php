@@ -14,8 +14,8 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.1/dist/js/bootstrap.min.js" integrity="sha384-VHvPCCyXqtD5DqJeNxl2dtTyhF78xXNXdkwX1CZeRusQfRKp+tA7hAShOK/B/fQ2" crossorigin="anonymous"></script>
 
 
-    <link rel="stylesheet" type="text/css" href="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"/>
-    <script type="text/javascript" src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"></script>
+    <!--link rel="stylesheet" type="text/css" href="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"/>
+    <script type="text/javascript" src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"></script-->
 
 
 </head>
@@ -25,16 +25,11 @@
 /*
 *
 * кнопка "вставить пути" - собирает список путей к файлам и копирует их в папку с названием "back-img"  /
-* рядом кладет конвертированый файл с оригинальным названием                                            /
-*
-* создать папку(бекап) и поместить туда оригиналы файлов                                                /
 * создать папку(конверты) и поместить туда конвертрованные копии картинок                               /
 *
 */
 
-
 $scandir = scandir(__DIR__);
-
 $list_images = [];
 $i=0;
 foreach ($scandir as $k=>$val ){
@@ -70,16 +65,34 @@ if (array_key_exists("strings",$_GET)){
              }
          }
         echo "Список ссылок на изображения\n";
+         var_dump($trLink);
+
     }
 }
 if(array_key_exists("conv_img_curdir",$_GET)){
     array_pop($_GET);
     $webpImg = new Image();
+    if (!is_dir("converted")){
+        mkdir('converted',0777,true);
+    }
     $resultArr = $webpImg->convToWebp($list_images);
     echo "Список конвертированных изображений текущей директории:\n";
-    print_r($resultArr);
+    foreach ($resultArr as $conImg){
+        echo "<b>".$conImg."\n</b>";
+    }
 }
 
+$convDir = scandir(__DIR__."/converted");
+$i=0;
+foreach ($convDir as $k=>$val ){
+        $conv_images[$i] = getimagesize($val);
+        $conv_images[$i]["filesrc"] = "converted/".$val;
+        $conv_images[$i]["filename"] = explode(".",$val)[0];
+        $conv_images[$i]["filesize"] = filesize("converted/".$val);
+        $i++;
+}
+array_shift($conv_images);
+array_shift($conv_images);
 
 
 class Image{
@@ -109,7 +122,7 @@ class Image{
                         break;
                 }
                 if ($im){
-                    imagewebp($im, $image["filename"].'.webp');
+                    imagewebp($im, 'converted/'.$image["filename"].'.webp');
                     $returnArray[] = $image["filesrc"];
                 }else{
                     $returnArray[] = $image["filesrc"]." - (ERROR)";
@@ -162,11 +175,23 @@ class Image{
                 <?else:?>
                     <div class="h6 text-center">Не найдено изображений</div>
                 <?endif;?>
+                <hr>
+                <?if(count($conv_images)>0):?>
+                <div class="h4 text-center title-of-converted-images" title="Свернуть блок">Список конвертированных изображений:</div>
+                    <div class="list-images-k converted-images-block d-flex flex-wrap" name="list-images">
+                        <?
+                        foreach ($conv_images as $key => $arConvImgInfo):?>
+                            <div class="p-2" title="<?=$arConvImgInfo["filesize"]?> bytes">
+                                <div class="prew-conv-img"  style="background-image: url('<?=$arConvImgInfo["filesrc"];?>')"></div>
+                                <span id="<?=$key?>"><?=$arConvImgInfo["filename"];?></span>
+                            </div>
+                        <?endforeach;?>
+                    </div>
+                <?endif;?>
             </div>
         </div>
     </div>
 </div>
-<?/*
 
 <div class="container" data-containerId="2">
     <div class="row">
@@ -186,6 +211,7 @@ class Image{
         </div>
     </div>
 </div>
+<?/*
 
 <div class="container" data-containerId="3">
     <div class="row">
@@ -213,44 +239,37 @@ class Image{
     form .strings,input.uploaded-files{
         width: 80%;
     }
-    form .prew-conv-img{
+    .alert.alert-info .prew-conv-img{
         width: 150px;
         height: 100px;
         background-size: contain;
         background-repeat: no-repeat;
         background-position: center center;
     }
+    .title-of-converted-images{
+        cursor: pointer;
+    }
 </style>
 <!--/**/-->
 <script>
-
-
-    // $('.single-item').slick({
-    //     dots: true,
-    //     infinite: true,
-    //     speed: 300,
-    //     slidesToShow: 3,
-    // });
-
-    ////**////
-
     ////**////
     const cur_dir_spo = document.querySelector(".conv-img-curdir-spo");
     const conv_curdir_btn = document.querySelector(".conv-img-curdir-btn");
+    const title_converted_images = document.querySelector(".title-of-converted-images");
+    const converted_images_block = document.querySelector(".converted-images-block");
 
-    cur_dir_spo.addEventListener("click", () => {
-        if (cur_dir_spo.classList.contains("active")){
-            cur_dir_spo.classList.remove("active");
-            conv_curdir_btn.classList.remove("active");
-            conv_curdir_btn.classList.add("d-none");
-        }else{
-            cur_dir_spo.classList.add("active");
-            conv_curdir_btn.classList.add("active");
-            conv_curdir_btn.classList.remove("d-none");
-        }
+    title_converted_images.addEventListener("click",()=>{
+        title_converted_images.classList.toggle("active");
+        converted_images_block.classList.toggle("d-none");
+        converted_images_block.classList.toggle("d-flex");
     });
 
-    console.log("aazazaza")
+    cur_dir_spo.addEventListener("click", () => {
+        cur_dir_spo.classList.toggle("active");
+        conv_curdir_btn.classList.toggle("d-none");
+        conv_curdir_btn.classList.toggle("active");
+    });
+
 </script>
 <!--/**/-->
 
