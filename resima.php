@@ -47,25 +47,25 @@ foreach ($scandir as $k=>$val ){
 
 echo "<pre>";
 
-//print_r($_GET);
+//print_r($_SERVER);
 
 echo "</pre>";
 
 if (array_key_exists("strings",$_GET)){
-    $arLinks = explode(" ",$_GET["strings"]);
+    $arLinks = explode(",",$_GET["strings"]);
     if (count($arLinks) > 0){
          foreach ($arLinks as $link){
              $serverName = stripos($link, $_SERVER["SERVER_NAME"]);
              if($serverName>0){
                  $trLink[] = substr($link,$serverName+strlen($_SERVER["SERVER_NAME"])+1);
-             }elseif( stripos($link,"/")==0){
-                 $trLink[] = ltrim($link,"/");
              }else{
                  $trLink[] = $link;
              }
          }
         echo "Список ссылок на изображения\n";
-         var_dump($trLink);
+       // $wer = Image::optimiseCurImgs($trLink);
+        var_dump($trLink);
+   
 
     }
 }
@@ -131,6 +131,52 @@ class Image{
         }
         return $returnArray;
     }
+
+    public static function optimiseCurImgs($inputArray){
+        $list_imags = [];
+        foreach ($inputArray as $k=>$val ){
+            if (getimagesize($val) ){
+                $imagname = explode(".",$val)[1];
+                if($imagname != "ico"){
+                    $list_imags[$i] = getimagesize($val);
+                    $list_imags[$i]["filesrc"] = $val;
+                    $list_imags[$i]["filename"] = explode(".",$val)[0];
+                    $list_imags[$i]["filesize"] = filesize($val);
+                    $i++;
+                }
+            }
+            print_r($imagname);
+        }
+        $returnArray = [];
+        if (count($list_imags)>0){
+            foreach ($list_imags as $image){
+                switch ($image["mime"]){
+                    case "image/jpeg":
+                        $im = imagecreatefromjpeg($image["filesrc"]);
+                        break;
+                    case "image/gif":
+                        $im = imagecreatefromgif($image["filesrc"]);
+                        break;
+                    case "image/png":
+                        $im = imagecreatefrompng($image["filesrc"]);
+                        break;
+                    case "image/x-ms-bmp":
+                        $im = imagecreatefromwbmp($image["filesrc"]);
+                        break;
+                    default:
+                        $returnArray[] = $image["filesrc"]." - (non supported)";
+                        break;
+                }
+                if ($im){
+                    imagewebp($im, $image["filesrc"].$image["filename"].'.webp');
+                    $returnArray[] = $image["filesrc"];
+                }else{
+                    $returnArray[] = $image["filesrc"]." - (ERROR)";
+                }
+            }
+        }
+        return $returnArray;
+    }
 }
 
 ?>
@@ -140,28 +186,27 @@ class Image{
         <div class="col-12">
             <div class="alert alert-warning text-center mb-4 p-2">
                 <div class="h6 text-center">Форматы .bmp .png .jpg .gif</div>
-                <a title="сбросить GET параметры" href="<?php echo __FILE__;?>">Форматы ICO и SVG не поддерживаются !</a>
+                <a title="сбросить GET параметры" href="<?php echo $_SERVER["HTTP_REFERER"];?>">Форматы ICO и SVG не поддерживаются !</a>
             </div>
         </div>
     </div>
 </div>
 
 <!--/*
-    сделать вкладки для каждого инпута
+    кнопки для каждого контейнера с формой
 */-->
 <div class="container">
     <div class="row">
         <div class="tabs-wrapper d-flex flex-wrap">
-            <div class="tab bg-info text-white p-2 ml-1 mr-1 rounded">Список изображений в текущей директории:</div>
         </div>
     </div>
 </div>
 
-<div class="container" data-containerId="1">
+<div class="container for-tab active">
     <div class="row">
         <div class="col-12">
             <div class="alert alert-info">
-                <div class="h4 text-center" data-header="1">Список изображений в текущей директории:</div>
+                <div class="h4 text-center tab-header">Список изображений в текущей директории:</div>
                 <?if(count($list_images)>0):?>
                 <form action="" class="">
                     <div class="list-images-k d-flex flex-wrap" name="list-images">
@@ -200,18 +245,18 @@ class Image{
     </div>
 </div>
 
-<div class="container" data-containerId="2">
+<div class="container for-tab">
     <div class="row">
         <div class="col-12">
             <div class="alert alert-info">
-                <div class="h4 text-center" data-header="2">Список ссылок на изображения:</div>
-                <p>вставлять без названия сайта, без первого слеша, через пробел. Например:</p>
-                <span>local/templates/moguntia/images/about_bc.png local/templates/moguntia/images/advan1.png</span>
+                <div class="h4 text-center tab-header">Список ссылок на изображения:</div>
+                <p>вставлять без названия сайта, через запятую. Например:</p>
+                <span>/local/templates/moguntia/images/about_bc.png, /local/templates/moguntia/images/advan1.png</span>
                 <hr>
                 <form action="" class="d-flex justify-content-between">
-                    <textarea name="strings" class="p-2 border border-primary rounded strings" placeholder="Вставить список ссылок"></textarea>
+                    <textarea name="strings" class="p-2 border border-primary rounded strings" disabled placeholder="Вставить список ссылок"></textarea>
                     <div>
-                        <input type="submit" class="btn btn-info" value="Отправить">
+                        <input disabled type="submit" class="btn btn-info" value="Отправить">
                     </div>
                 </form>
             </div>
@@ -220,11 +265,11 @@ class Image{
 </div>
 <?/*
 
-<div class="container" data-containerId="3">
+<div class="container for-tab">
     <div class="row">
         <div class="col-12">
             <div class="alert alert-info">
-                <div class="h4 text-center">Загрузить изображения:</div>
+                <div class="h4 text-center tab-header">Загрузить изображения:</div>
                 <form action="" class="d-flex justify-content-between strigns">
                     <input type="file" multiple name="files[]" class="p-2 border border-primary rounded uploaded-files">
                     <button type="submit" class="btn btn-info">Отправить файлы</button>
@@ -256,6 +301,12 @@ class Image{
     .title-of-converted-images{
         cursor: pointer;
     }
+    .tab.btn-toggle.bg-secondary{
+        cursor: pointer;
+    }
+    .tab.btn-toggle.bg-info{
+        cursor: default;
+    }
 </style>
 <!--/**/-->
 <script>
@@ -277,6 +328,33 @@ class Image{
         conv_curdir_btn.classList.toggle("active");
     });
 
+    $(document).ready(function(){
+
+        /*on load page*/
+        $(".tab-header").each(function( index ) {
+            $( ".tabs-wrapper" ).append( "<div data-index='"+index+"' class='tab btn-toggle bg-secondary text-white p-2 ml-1 mr-1 rounded'>"+$( this ).text()+"</div>" );
+        });
+
+        if(localStorage.getItem("tabIndex")){
+            $(".tab.btn-toggle").eq( Number(localStorage.getItem("tabIndex")) ).addClass("bg-info");
+            $(".tab.btn-toggle").eq( Number(localStorage.getItem("tabIndex")) ).removeClass("bg-secondary");
+            $(".tab.btn-toggle").eq( Number(localStorage.getItem("tabIndex")) ).siblings(".tab.btn-toggle").removeClass("bg-info");
+            $(".tab.btn-toggle").eq( Number(localStorage.getItem("tabIndex")) ).siblings(".tab.btn-toggle").addClass("bg-secondary");
+            $(".for-tab").eq( Number(localStorage.getItem("tabIndex")) ).show();
+            $(".for-tab").eq( Number(localStorage.getItem("tabIndex")) ).siblings(".for-tab").hide();
+        }
+
+        $(".tabs-wrapper").on("click",".tab.btn-toggle",function (){
+            $(".tab.btn-toggle").eq( $(this).data("index") ).addClass("bg-info");
+            $(".tab.btn-toggle").eq( $(this).data("index") ).removeClass("bg-secondary");
+            $(".tab.btn-toggle").eq( $(this).data("index") ).siblings(".tab.btn-toggle").removeClass("bg-info");
+            $(".tab.btn-toggle").eq( $(this).data("index") ).siblings(".tab.btn-toggle").addClass("bg-secondary");
+            $(".for-tab").eq( $(this).data("index") ).show();
+            $(".for-tab").eq( $(this).data("index") ).siblings(".for-tab").hide();
+            localStorage.setItem("tabIndex",$(this).data("index"));
+        })
+
+    });
 
 
 </script>
